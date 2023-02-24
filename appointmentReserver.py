@@ -15,77 +15,84 @@ def findAppointment(serviceUrl, districtOffice, firstName, lastName, email, phon
 
 	# find the correct location
 	driver.get(serviceUrl)
-	district = driver.find_element(By.XPATH, "//div[contains(@class, 'behoerdenitem') and contains(., '" + districtOffice + "')]")
 
-	# finding all offices where dates can be booked
-	bookableOffices = district.find_elements(By.CLASS_NAME, "termin-buchen")
-	bookableOfficeNames = []
+	if len(districtOffice) == 0:
+		districts = driver.find_elements(By.XPATH, "//div[contains(@class, 'behoerdenitem')]")
+	else:
+		districts = driver.find_elements(By.XPATH, "//div[contains(@class, 'behoerdenitem') and contains(., '" + districtOffice + "')]")
 
-	# finding the names of those offices
-	for bookableOffice in bookableOffices:
-		officeContainer = bookableOffice.find_element(By.XPATH, "./../../..")
-		bookableOfficeNames.append(officeContainer.find_element(By.CLASS_NAME, "referdienstleister").get_attribute('text'))
-
-	# print the discovered offices
-	print("Appointments can be booked in the following offices:")
-	for name in bookableOfficeNames:
-		print("\t" + name)
-
-	print("")
-
-	# amount of offices for iteration
-	numOffices = len(bookableOffices)
-
-	for officeIndex in range(numOffices):
-
-		print("Attempt to book an appointment at " + bookableOfficeNames[officeIndex] + ".")
-
-		driver.get("https://service.berlin.de/dienstleistung/121721/")
-		district = driver.find_element(By.XPATH, "//div[contains(@class, 'behoerdenitem') and contains(., '" + districtOffice + "')]")
+	for district in districts:
+		# finding all offices where dates can be booked
 		bookableOffices = district.find_elements(By.CLASS_NAME, "termin-buchen")
-		bookableOffices[officeIndex].click()
+		bookableOfficeNames = []
 
-		# check if we need to reset the search parameters
-		resetAlert = driver.find_elements(By.XPATH, "//*[contains(text(), 'Terminsuche mit dieser Auswahl starten')]")
-		if len(resetAlert) > 0:
-			print("\tReset search history.")
-			resetAlert[0].click()
+		# finding the names of those offices
+		for bookableOffice in bookableOffices:
+			officeContainer = bookableOffice.find_element(By.XPATH, "./../../..")
+			bookableOfficeNames.append(officeContainer.find_element(By.CLASS_NAME, "referdienstleister").get_attribute('text'))
 
-		# indicator flag if other tables are available
-		nextTablesAvailable = True
+		# print the discovered offices
+		print("Appointments can be booked in the following offices:")
+		for name in bookableOfficeNames:
+			print("\t" + name)
 
-		while nextTablesAvailable:
-
-			# find calendar tables
-			calendarTables = driver.find_elements(By.CLASS_NAME, "calendar-month-table")
-			dates = []
-
-			for table in calendarTables:
-				# get free dates
-				dates += table.find_elements(By.CLASS_NAME, "buchbar")
-
-				# check if dates are available in later months
-				nextTables = table.find_elements(By.CLASS_NAME, "next")
-				if len(nextTables) > 0:
-					if len(nextTables[0].find_elements(By.XPATH, ".//*")) > 0:
-						nextTables[0].click()
-						nextTablesAvailable = True
-					else:
-						nextTablesAvailable = False
-
-		if len(dates) == 0:
-			print("\tNo free appointments are available.")
-
-		else:
-			print("\tFree appointments found.")
-
-			for date in dates:
-				date.click()
-				
-				return True
-
-		# add an empty line for clear output	
 		print("")
+
+		# amount of offices for iteration
+		numOffices = len(bookableOffices)
+
+		for officeIndex in range(numOffices):
+
+			print("Attempt to book an appointment at " + bookableOfficeNames[officeIndex] + ".")
+
+			driver.get("https://service.berlin.de/dienstleistung/121721/")
+			district = driver.find_element(By.XPATH, "//div[contains(@class, 'behoerdenitem') and contains(., '" + districtOffice + "')]")
+			bookableOffices = district.find_elements(By.CLASS_NAME, "termin-buchen")
+			bookableOffices[officeIndex].click()
+
+			# check if we need to reset the search parameters
+			resetAlert = driver.find_elements(By.XPATH, "//*[contains(text(), 'Terminsuche mit dieser Auswahl starten')]")
+			if len(resetAlert) > 0:
+				print("\tReset search history.")
+				resetAlert[0].click()
+
+			# indicator flag if other tables are available
+			nextTablesAvailable = True
+
+			while nextTablesAvailable:
+
+				# find calendar tables
+				calendarTables = driver.find_elements(By.CLASS_NAME, "calendar-month-table")
+				dates = []
+
+				for table in calendarTables:
+					# get free dates
+					dates += table.find_elements(By.CLASS_NAME, "buchbar")
+
+					# check if dates are available in later months
+					nextTables = table.find_elements(By.CLASS_NAME, "next")
+					if len(nextTables) > 0:
+						if len(nextTables[0].find_elements(By.XPATH, ".//*")) > 0:
+							nextTables[0].click()
+							nextTablesAvailable = True
+						else:
+							nextTablesAvailable = False
+
+			if len(dates) == 0:
+				print("\tNo free appointments are available.")
+
+			else:
+				print("\tFree appointments found.")
+
+				for date in dates:
+					date.click()
+					
+
+					# todo print where it was found
+					return True
+
+			# add an empty line for clear output	
+			print("")
 
 	return False
 
@@ -131,14 +138,13 @@ def main():
 	email = "test@test.com"
 	phone = "1234567"
 
-
 	#serviceUrl = input("Enter link to the desired service:")
 	serviceUrl = "https://service.berlin.de/dienstleistung/121721/"
 
-
 	# district which to considere for appointments only
-	#districtOffice = input("Enter the desired district office:")
-	districtOffice = "Bezirksamt Mitte"
+	#districtOffice = input("Enter the desired district office (optional):")
+	#districtOffice = "Bezirksamt Mitte"
+	districtOffice = ""
 
 	delayInMinutes = 2
 	delayInSeconds = 0
@@ -152,7 +158,7 @@ def main():
 	print("Searching for an Appointment for: " + titles[0].text)
 	print("At: " + districtOffice)
 	print("")
-	
+
 	while True:
 
 		# make an appointment
